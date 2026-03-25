@@ -1,6 +1,5 @@
-[![Actions Status](https://github.com/scivision/skyfield-examples/workflows/ci/badge.svg)](https://github.com/scivision/skyfield-examples/actions)
+# Doppler Frequency Shift
 
+Example of command
 
-# Skyfield examples
-
-Demonstrates practical use of [skyfield](https://rhodesmill.org/skyfield/), the PyEphem replacement.
+`./doppler.py 55.6167 12.65 -t 2026-03-25T14:13:32 -o test.csh -d 5`

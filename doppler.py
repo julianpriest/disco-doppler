@@ -1,60 +1,95 @@
 #!/usr/bin/env python3
-"""
-compute range speed of satellite from an observer.
-This allows computing Doppler shift.
 
-example
+# TODO: Make logger output to stdout
 
-    python skyfield_iss_doppler.py "ISS (ZARYA)" 40 -100
-"""
-from skyfield.api import Topos, load, utc
-import math
-import typing
-from datetime import datetime
+from skyfield.api import Topos, load
+from datetime import datetime, timedelta, UTC
 from dateutil.parser import parse
+import numpy as np
 import argparse
+import math
 
-c = 299_792_458  # m/s
+C = 299_792_458
+NODE_NUMBER = 4032
+TLE_FILE_PATH = "disco-leop1.tle"
+CENTER_FREQ = 437
 
-
-def get_range_velocity(sat_name: str, obs_lat: float, obs_lon: float, time: datetime) -> typing.List[float]:
+def get_range_rate(obs_lat, obs_lon, time, tle=TLE_FILE_PATH, time_offset=1):
 
     ts = load.timescale()
+
     if isinstance(time, str):
         time = parse(time)
-    time = time.replace(tzinfo=utc)
+    time = time.replace(tzinfo=UTC)
     time = ts.utc(time) if time is not None else ts.now()
 
+    #print(f"OG time: {time.utc_strftime('%Y-%m-%d %H:%M:%S')}")
+
+    if time_offset:
+        time = time - timedelta(seconds=time_offset)
+
+    #print(f"offset time: {time.utc_strftime('%Y-%m-%d %H:%M:%S')}")
+
+    if isinstance(tle, str):
+        sat = load.tle_file(tle)
+        sat = sat[0] #its read as a len=1 list, this bypasses the list
+    #else:
+    #    stations_url = "http://celestrak.com/NORAD/elements/stations.txt"
+    #    satellites = load.tle(stations_url)
+    #    sat = satellites[sat_name]
+    #print(sat)
+    
     observer = Topos(obs_lat, obs_lon)
 
-    stations_url = "http://celestrak.com/NORAD/elements/stations.txt"
-    satellites = load.tle(stations_url)
+    relative = (sat - observer).at(time)
 
-    sat = satellites[sat_name]
+    relative_position = relative.position.km
+    relative_velocity = relative.velocity.km_per_s
 
-    relative_position = (sat - observer).at(time)
-    # sat_velocity = sat.at(tnow).velocity.km_per_s
-    range_velocity = relative_position.velocity.km_per_s
+    range_rate = np.dot(relative_velocity, relative_position) / np.linalg.norm(relative_position)
+    
+    return range_rate, relative_velocity
 
-    return range_velocity
+def get_range_speed(relative_velocity) :
+    return math.sqrt(relative_velocity[0]**2 + relative_velocity[1]**2 + relative_velocity[2]**2)
 
+def get_tx_freq(range_rate, freq):
+    return (1 + range_rate * 1e3 / C) * freq
+
+def get_rx_freq(range_rate, freq):
+    return (1 - range_rate * 1e3 / C) * freq
+
+def write_to_csh(output_path, adjusted_tx_freq, adjusted_rx_freq):
+    with open(output_path, "w") as f:
+        f.write(
+                f"node {NODE_NUMBER}\n"
+                f"set rx_freq {adjusted_rx_freq}\n"
+                f"set tx_freq {adjusted_tx_freq}\n"
+                )
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("satname", help="TLE name of satellie e.g. ISS (ZARYA)")
-    p.add_argument("obs_latlon", help="observer latitude longitude (degrees)", type=float, nargs=2)
-    p.add_argument("-t", "--time", help="UTC time of observation (default: now)", nargs="?")
-    p.add_argument("freqMHz", help="frequency in MHz to compute Doppler shift for", type=float, nargs="?")
-    P = p.parse_args()
+    parser = argparse.ArgumentParser()
 
-    range_velocity = get_range_velocity(P.satname, P.obs_latlon[0], P.obs_latlon[1], P.time)
+    #parser.add_argument("satname", help="TLE name of satellie e.g. ISS (ZARYA)")
+    parser.add_argument("obs_lat", help="observer longitude (degrees)", type=float)
+    parser.add_argument("obs_lon", help="observer longitude (degrees)", type=float)
+    #parser.add_argument("freq", help="frequency in MHz to compute Doppler shift for", nargs="?", type=float)
+    #parser.add_argument("-tle", help="Path to TLE file", type=str)
+    parser.add_argument("-t", "--time", help="UTC time of observation (default: now)", nargs="?")
+    parser.add_argument("-o", "--output", help="Path to output file", type=str)
+    parser.add_argument("-d", "--offset", help="Offset in seconds", type=int)
+    
+    args = parser.parse_args()
 
-    # notice the range_speed matches Gpredict, etc.
-    range_speed = math.sqrt(range_velocity[0] ** 2 + range_velocity[1] ** 2 + range_velocity[2] ** 2)
+    range_rate, relative_velocity = get_range_rate(args.obs_lat, args.obs_lon, args.time, TLE_FILE_PATH ,args.offset)
 
-    print(f"range speed [km/sec] {range_speed:.3f}")
+    range_speed = get_range_speed(relative_velocity)
 
-    if P.freqMHz:
-        observed_MHz = (1 + range_speed * 1e3 / c) * P.freqMHz
+    adjusted_tx_freq = get_tx_freq(range_rate, CENTER_FREQ)
+    adjusted_rx_freq = get_rx_freq(range_rate, CENTER_FREQ)
 
-        print(f"observed radio frequency [MHz] {observed_MHz:.4f}")
+    write_to_csh(args.output, adjusted_tx_freq, adjusted_rx_freq)
+    
+    print(f"TX freq: {adjusted_tx_freq}")
+    print(f"RX freq: {adjusted_rx_freq}")
+    print(f"file written to: {args.output}")
