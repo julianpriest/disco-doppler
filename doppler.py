@@ -11,7 +11,7 @@ import math
 
 C = 299_792_458
 NODE_NUMBER = 4032
-TLE_FILE_PATH = "disco-leop1.tle"
+TLE_FILE_PATH = "disco-test.tle"
 CENTER_FREQ = 437
 
 def get_range_rate(obs_lat, obs_lon, time, tle=TLE_FILE_PATH, time_offset=1):
