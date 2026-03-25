@@ -66,7 +66,7 @@ def write_to_csh(output_path, adjusted_tx_freq, adjusted_rx_freq):
                 f"set rx_freq {adjusted_rx_freq}\n"
                 f"set tx_freq {adjusted_tx_freq}\n"
                 )
-
+                
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--time", help="UTC time of observation (default: now)", nargs="?")
     parser.add_argument("-o", "--output", help="Path to output file", type=str)
     parser.add_argument("-d", "--offset", help="Offset in seconds", type=int)
-    
+    parser.add_argument("-q", "--quiet", help="No debug output", action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
     range_rate, relative_velocity = get_range_rate(args.obs_lat, args.obs_lon, args.time, TLE_FILE_PATH ,args.offset)
@@ -89,7 +89,10 @@ if __name__ == "__main__":
     adjusted_rx_freq = get_rx_freq(range_rate, CENTER_FREQ)
 
     write_to_csh(args.output, adjusted_tx_freq, adjusted_rx_freq)
-    
-    print(f"TX freq: {adjusted_tx_freq}")
-    print(f"RX freq: {adjusted_rx_freq}")
-    print(f"file written to: {args.output}")
+
+    #print(f"quiet: {args.quiet}")
+    if not args.quiet:
+        print(f"time: {args.time}")
+        print(f"TX freq: {adjusted_tx_freq}")
+        print(f"RX freq: {adjusted_rx_freq}")
+        print(f"output file: {args.output}")
