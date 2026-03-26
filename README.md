@@ -12,7 +12,7 @@ Requires [Skyfield](https://rhodesmill.org/skyfield/)
 ## Example of command
 
 `./doppler.py 55.6167 12.65 -t 2026-03-25T14:13:32 -o tmp.csh -d 5`
-
+```
 usage: doppler.py [-h] [-t [TIME]] [-o OUTPUT] [-d OFFSET] [-q | --quiet | --no-quiet]
                   obs_lat obs_lon
 
@@ -30,13 +30,14 @@ options:
                         Offset in seconds
   -q, --quiet, --no-quiet
                         No debug output
-
+```
 
 ## Trigger
 
 `./dopplerd.sh -d 2 -l`
 
+```
 Usage: ./dopplerd.sh [-l] log [-d] delay [-h] help
 [ctrl-c] quit, tail -f doppler.log to monitor
 frequencies output to input.csh every [delay] s
-
+```
