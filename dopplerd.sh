@@ -33,7 +33,7 @@ echo "Starting dopplerd with $my_interval s interval and offset $my_delta"
 while true;
 do
     my_time="$(date -uIs)"
-    ./doppler.py 55.6167 12.65 -t $my_time -o tmp.csh -d $my_delta
+    ./doppler.py 55.6167 12.65 -t $my_time -o tmp.csh -d $my_delta -q 
     mv -f tmp.csh input.csh
     if [ $my_log -eq 1 ];
     then
