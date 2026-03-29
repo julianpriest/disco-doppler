@@ -12,7 +12,7 @@ import math
 C = 299_792_458
 NODE_NUMBER = 4032
 TLE_FILE_PATH = "disco-test.tle"
-CENTER_FREQ = 437
+CENTER_FREQ = 437445000
 
 def get_range_rate(obs_lat, obs_lon, time, tle=TLE_FILE_PATH, time_offset=1):
 
@@ -26,7 +26,7 @@ def get_range_rate(obs_lat, obs_lon, time, tle=TLE_FILE_PATH, time_offset=1):
     #print(f"OG time: {time.utc_strftime('%Y-%m-%d %H:%M:%S')}")
 
     if time_offset:
-        time = time - timedelta(seconds=time_offset)
+        time = time + timedelta(seconds=time_offset)
 
     #print(f"offset time: {time.utc_strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     #parser.add_argument("-tle", help="Path to TLE file", type=str)
     parser.add_argument("-t", "--time", help="UTC time of observation (default: now)", nargs="?")
     parser.add_argument("-o", "--output", help="Path to output file", type=str)
-    parser.add_argument("-d", "--offset", help="Offset in seconds", type=int)
+    parser.add_argument("-d", "--offset", help="Offset in seconds", nargs='?', const=0, type=int)
     parser.add_argument("-q", "--quiet", help="No debug output", action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
@@ -88,7 +88,8 @@ if __name__ == "__main__":
     adjusted_tx_freq = get_tx_freq(range_rate, CENTER_FREQ)
     adjusted_rx_freq = get_rx_freq(range_rate, CENTER_FREQ)
 
-    write_to_csh(args.output, adjusted_tx_freq, adjusted_rx_freq)
+    write_to_csh(args.output, int(adjusted_tx_freq), int(adjusted_rx_freq))
+    # TTC requires freq in int
 
     #print(f"quiet: {args.quiet}")
     if not args.quiet:

@@ -34,10 +34,11 @@ options:
 
 ## Trigger
 
-`./dopplerd.sh -d 2 -l`
+`./dopplerd.sh -i 2 -d 0 -l`
 
 ```
-Usage: ./dopplerd.sh [-l] log [-d] delay [-h] help
+Usage: ./dopplerd.sh [-l] log [-i] interval [-d] offset delta [-h] help
 [ctrl-c] quit, tail -f doppler.log to monitor
-frequencies output to input.csh every [delay] s
+frequencies output to input.csh
+every [interval] s, with offset [delta] s
 ```
